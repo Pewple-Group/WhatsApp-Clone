@@ -3,14 +3,29 @@ import styled from "styled-components";
 import WhatsappLogo from "../assets/whatsapp.png";
 
 import GoogleLogo from "../assets/google.png";
-import { useHistory } from "react-router";
-import { auth } from "../firebase";
+
+import db, { auth, provider } from "../firebase";
 import { useStateValue } from "../StateProvider";
 function Login({ setUser, setSignUp }) {
-  const history = useHistory();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [{ user }, dispatch] = useStateValue();
+
+  const signInWithGoogle = () => {
+    auth
+      .signInWithPopup(provider)
+      .then((result) => {
+        const newUser = {
+          fullname: result.user.displayName,
+          email: result.user.email,
+          photoURL: result.user.photoURL,
+        };
+        setUser(newUser);
+        localStorage.setItem("user", JSON.stringify(newUser));
+        db.collection("users").doc(result.user.uid).set(newUser);
+      })
+      .catch((err) => alert(err.message));
+  };
 
   const signInWithEmail = (e) => {
     e.preventDefault();
@@ -70,7 +85,7 @@ function Login({ setUser, setSignUp }) {
 
           <div className="signInOptions">
             <button onClick={signInWithEmail}>Sign-In Securely</button>
-            <OtherSignInOption>
+            <OtherSignInOption onClick={signInWithGoogle}>
               <img src={GoogleLogo} alt="" />
               <p>Sign In With Google</p>
             </OtherSignInOption>
@@ -112,6 +127,13 @@ const Container = styled.div`
     height: 222px !important;
     max-height: 222px;
     background-color: #00bfa5;
+  }
+
+  @media (max-width: 800px) {
+    justify-content: flex-start;
+    overflow: hidden !important;
+
+    margin-right: 0px;
   }
 `;
 
@@ -174,7 +196,7 @@ const LoginComponent = styled.div`
 const LoginForm = styled.div`
   margin-left: 50px;
   margin-top: 30px;
-
+  width: 80%;
   button {
     margin-top: 30px;
     padding: 5px 20px 5px 20px;
@@ -246,10 +268,26 @@ const OtherSignInOption = styled.div`
   padding: 5px 20px 5px 20px;
   cursor: pointer;
   border-radius: 5px;
-  width: 200px;
+  width: fit-content;
+
   margin-top: 30px;
+  @media (max-width: 800px) {
+    width: 50px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   img {
     width: 30px;
     margin-right: 15px;
+    margin-left: 15px;
+  }
+
+  p {
+    @media (max-width: 800px) {
+      display: none;
+    }
   }
 `;

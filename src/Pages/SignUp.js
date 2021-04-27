@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import WhatsappLogo from "../assets/whatsapp.png";
-import { useHistory } from "react-router";
+
 import db, { auth, storage } from "../firebase";
-import { useStateValue } from "../StateProvider";
-import { findAllByDisplayValue } from "@testing-library/dom";
+
 function SignUp({ setSignUp }) {
-  const history = useHistory();
+  // const history = useHistory();
   const storageRef = storage.ref();
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
@@ -14,7 +13,7 @@ function SignUp({ setSignUp }) {
   const [repassword, setRepassword] = useState("");
   const [profile, setProfile] = useState("");
   const [disable, setDisable] = useState(false);
-  const [dispatch] = useStateValue();
+
   const signUp = (e) => {
     e.preventDefault();
     auth

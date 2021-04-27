@@ -1,10 +1,5 @@
 import styled from "styled-components";
-import {
-  BrowserRouter as Router,
-  Route,
-  Switch,
-  useHistory,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import "./App.css";
 import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
@@ -16,7 +11,7 @@ import SideBar from "./Components/SideBar";
 
 function App() {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")));
-  const history = useHistory();
+
   const [signUp, setSignUp] = useState(false);
   const signOut = () => {
     auth
@@ -31,17 +26,19 @@ function App() {
   };
 
   return (
-    <Router>
-      {!user && signUp ? (
-        <SignUp setSignUp={setSignUp} />
-      ) : !user && !signUp ? (
-        <Login setUser={setUser} setSignUp={setSignUp} />
-      ) : (
-        <Container>
+    <Container>
+      <Router>
+        {!user && signUp ? (
+          <SignUp setSignUp={setSignUp} />
+        ) : !user && !signUp ? (
+          <Login setUser={setUser} setSignUp={setSignUp} />
+        ) : (
           <Switch>
             <Route path="/:userId" exact>
-              <SideBar signOut={signOut} />
-              <MainContainer userName={user.fullname} />
+              <div className="chatDisplay">
+                <SideBar signOut={signOut} />
+                <MainContainer userName={user.fullname} />
+              </div>
             </Route>
             <Route path="/signup">
               <SignUp />
@@ -50,9 +47,9 @@ function App() {
               <Home signOut={signOut} />
             </Route>
           </Switch>
-        </Container>
-      )}
-    </Router>
+        )}
+      </Router>
+    </Container>
   );
 }
 
@@ -64,4 +61,20 @@ const Container = styled.div`
   height: 100vh;
   min-height: fit-content;
   justify-content: center;
+
+  background-color: #fafafa;
+  @media (max-width: 800px) {
+    justify-content: flex-start;
+  }
+
+  .chatDisplay {
+    width: 100%;
+
+    height: 100vh;
+    min-height: 600px;
+
+    background-color: #fafafa;
+    display: flex;
+  }
+  /* 8849358896 */
 `;

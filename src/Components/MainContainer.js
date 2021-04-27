@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import AccountCircleIcon from "@material-ui/icons/AccountCircle";
-import ChatImage from "../chatImage.png";
+// import ChatImage from "../chatImage.png";
 import SearchIcon from "@material-ui/icons/Search";
 import MoreVertIcon from "@material-ui/icons/MoreVert";
 import ChatInput from "./ChatInput";
@@ -10,8 +10,10 @@ import { useParams } from "react-router-dom";
 import db, { auth } from "../firebase";
 import firebase from "firebase";
 function MainContainer({ userName }) {
+  const messageRef = useRef();
   let { userId } = useParams();
   const [user, setUser] = useState([]);
+  const [messages, setMessages] = useState([]);
   const getUser = () => {
     db.collection("users")
       .doc(userId)
@@ -21,20 +23,59 @@ function MainContainer({ userName }) {
   };
 
   const sendMessage = (messageData) => {
-    // if (userId) {
-    //   let payload = {
-    //     text: messageData.message,
-    //     senderEmail: messageData.email,
-    //     hostEmail: user.email,
-    //     timestamp: firebase.firestore.Timestamp.now(),
-    //   };
-    //   db.collection("chats").doc(userId).collection("messages").add(payload);
-    // }
+    if (userId) {
+      let payload = {
+        text: messageData.message,
+        files: messageData.files?.length > 0 ? messageData.files : [],
+        videos: messageData.videos?.length > 0 ? messageData.videos : [],
+        voice: messageData.voice ? messageData.voice : "",
+        senderEmail: auth.currentUser?.email,
+        receiverEmail: user.email,
+        timestamp: firebase.firestore.Timestamp.now(),
+      };
+      db.collection("chats").doc(userId).collection("messages").add(payload);
+      db.collection("chats")
+        .doc(auth.currentUser?.uid)
+        .collection("messages")
+        .add(payload);
+      let Friend = {
+        email: user?.email,
+        photoURL: user?.photoURL,
+        fullname: user?.fullname,
+      };
+
+      db.collection("FriendsList")
+        .doc(auth.currentUser.uid)
+        .collection("list")
+        .doc(userId)
+        .set(Friend);
+    }
+    messageRef.current.scrollTop = messageRef.current.scrollHeight;
+  };
+
+  const getMessages = () => {
+    db.collection("chats")
+      .doc(userId)
+      .collection("messages")
+      .orderBy("timestamp", "asc")
+      .onSnapshot((snapshot) => {
+        let messages = snapshot.docs.map((doc) => doc.data());
+
+        const newMessage = messages.filter(
+          (message) =>
+            message.senderEmail === (auth.currentUser?.email || user?.email) ||
+            message.receiverEmail === (auth.currentUser?.email || user?.email)
+        );
+
+        setMessages(newMessage);
+      });
   };
 
   useEffect(() => {
     getUser();
-  }, []);
+    getMessages();
+  }, [userId]);
+
   return (
     <Container>
       <Header>
@@ -64,7 +105,18 @@ function MainContainer({ userName }) {
         </HeaderRight>
       </Header>
 
-      <MessageContainer></MessageContainer>
+      <MessageContainer ref={messageRef}>
+        {messages.map((message) => (
+          <ChatMessage
+            text={message.text}
+            sender={message.senderEmail}
+            files={message.files}
+            videos={message.videos}
+            timestamp={message.timestamp}
+            voice={message.voice}
+          />
+        ))}
+      </MessageContainer>
 
       <ChatInput sendMessage={sendMessage} />
     </Container>
@@ -78,6 +130,7 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 550px;
 `;
 
 const Header = styled.div`
@@ -130,6 +183,7 @@ const MessageContainer = styled.div`
   overflow-y: scroll;
   ::-webkit-scrollbar {
     width: 6px;
+    scroll-behavior: smooth;
   }
   ::-webkit-scrollbar-thumb {
     background: #b6b6b6;

@@ -7,14 +7,15 @@ import MoreVertIcon from "@material-ui/icons/MoreVert";
 import FriendProfile from "./FriendProfile";
 import db, { auth } from "../firebase";
 import { useHistory } from "react-router-dom";
-import firebase from "firebase";
+// import firebase from "firebase";
 
 function SideBar({ signOut }) {
   const history = useHistory();
   const [users, setUsers] = useState([]);
-
+  const [friendsList, setFriendsList] = useState([]);
   const [searchInput, setSearchInput] = useState("");
-  const [searchElement, setSearchElement] = useState({});
+
+  // const [searchElement, setSearchElement] = useState({});
 
   useEffect(() => {
     const fetchdata = async () => {
@@ -23,7 +24,17 @@ function SideBar({ signOut }) {
         data.docs.filter((doc) => doc.data().email !== auth.currentUser?.email)
       );
     };
+    const fetchFriends = async () => {
+      const data = await db
+        .collection("FriendsList")
+        .doc(auth.currentUser?.uid)
+        .collection("list")
+        .onSnapshot((snapshot) => {
+          setFriendsList(snapshot.docs);
+        });
+    };
     fetchdata();
+    fetchFriends();
   }, [users]);
 
   const searching = (e) => {
@@ -35,35 +46,41 @@ function SideBar({ signOut }) {
     }
   };
 
-  const searchItem = users
-    .filter((data) => {
-      if (searchInput) {
-        if (
-          data.data().email.toLowerCase().includes(searchInput.toLowerCase()) ||
-          data.data().fullname.toLowerCase().includes(searchInput.toLowerCase())
-        ) {
-          return data;
-        }
+  const searchItem = users.filter((data) => {
+    if (searchInput) {
+      if (
+        data.data().email.toLowerCase().includes(searchInput.toLowerCase()) ||
+        data.data().fullname.toLowerCase().includes(searchInput.toLowerCase())
+      ) {
+        return data;
       }
-    })
-    .map((data) => {
-      return (
-        <FriendProfile
-          fullname={data?.data().fullname}
-          photoURL={data?.data().photoURL}
-          onClick={() => goToUser(data.id)}
-        ></FriendProfile>
-      );
-    });
+    }
+  });
+
+  const item = searchItem.map((data) => {
+    return (
+      <FriendProfile
+        fullname={data?.data().fullname}
+        photoURL={data?.data().photoURL}
+        onClick={() => goToUser(data.id)}
+      ></FriendProfile>
+    );
+  });
 
   return (
     <Container>
       <Header>
-        <Profile onClick={signOut}>
+        <Profile
+          onClick={() => {
+            history.push("/");
+            signOut();
+          }}
+        >
           {auth?.currentUser?.photoURL ? (
             <img
               className="user__profile__image"
               src={auth.currentUser.photoURL}
+              alt=""
             />
           ) : (
             <ProfilePicture />
@@ -87,14 +104,18 @@ function SideBar({ signOut }) {
       </SearchContainer>
 
       <MainContent>
-        {searchItem.length > 0 ? (
-          searchItem
+        {item.length > 0 ? (
+          item
         ) : (
-          <p
-            style={{ alignSelf: "center", fontSize: "24px", marginTop: "20px" }}
-          >
-            New Chat
-          </p>
+          <div className="friends__lists">
+            {friendsList.map((friend) => (
+              <FriendProfile
+                fullname={friend.data().fullname}
+                photoURL={friend.data().photoURL}
+                onClick={() => goToUser(friend.id)}
+              />
+            ))}
+          </div>
         )}
       </MainContent>
     </Container>
@@ -194,5 +215,3 @@ const MainContent = styled.div`
     background: #cccccc;
   }
 `;
-
-const SearchResult = styled.div``;
